@@ -1,0 +1,20 @@
+server:
+  port: 8888
+  servlet:
+    context-path: /NoOps-File
+  tomcat:
+    max-http-form-post-size: -1
+
+spring:
+  servlet:
+    multipart:
+      max-file-size: 500MB
+      max-request-size: 1GB
+
+#logging:
+#  level:
+#    org.springframework.security: trace
+
+NoOpsFile:
+  admin-password: admin123
+  guest-password: guest123

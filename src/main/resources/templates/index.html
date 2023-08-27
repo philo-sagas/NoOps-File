@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NoOps File Executor</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css"
+          th:href="@{/webjars/bootstrap/5.3.1/dist/css/bootstrap.min.css}"
+          integrity="sha256-2TnSHycBDAm2wpZmgdi0z81kykGPJAkiUY+Wf97RbvY=" crossorigin="anonymous">
+    <link rel="icon" th:href="@{/favicon.ico}">
+    <style>
+        .navbar .brand-logo {
+            transition: .2s ease-in-out transform
+        }
+
+        .navbar .brand-logo:hover {
+            transform: rotate(45deg) scale(1.1)
+        }
+    </style>
+</head>
+
+<body>
+<nav class="navbar bg-light sticky-top">
+    <div class="container-fluid">
+        <a class="navbar-brand" th:href="@{/}">
+            <img th:src="@{/assets/noops.png}" alt="Logo" width="24" height="24"
+                 class="brand-logo d-inline-block align-text-top">
+            NoOps-File
+        </a>
+        <div class="dropdown">
+            <a sec:authentication="name" class="navbar-text nav-link dropdown-toggle" href="#" role="button"
+               data-bs-toggle="dropdown" aria-expanded="false">
+                anonymousUser
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li>
+                    <form th:action="@{/logout}" method="post">
+                        <button type="submit" class="dropdown-item">退出</button>
+                    </form>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container my-3">
+    <div th:if="${errorMessage != null}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <div th:text="${errorMessage}"></div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div class="row">
+        <div class="col-auto me-auto">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li th:each="breadcrumbInfo : ${fileResult.breadcrumbList}"
+                        th:classappend="${breadcrumbInfoStat.last}? 'active'"
+                        th:attr="aria-current=${breadcrumbInfoStat.last}? 'page'" class="breadcrumb-item">
+                        <a th:unless="${breadcrumbInfoStat.last}" th:href="@{/file(path=${breadcrumbInfo.path})}"
+                           th:text="${breadcrumbInfo.name}"></a>
+                        <span th:if="${breadcrumbInfoStat.last}" th:text="${breadcrumbInfo.name}"></span>
+                    </li>
+                </ol>
+            </nav>
+        </div>
+        <div class="col-auto">
+            <button sec:authorize="hasRole('ROLE_ADMIN')" type="button" class="btn btn-outline-primary"
+                    data-bs-toggle="modal" data-bs-target="#fileUploadModal">上传
+            </button>
+        </div>
+    </div>
+    <div class="row g-3">
+        <div class="col-3">
+            <div class="list-group">
+                <a th:if="${fileResult.previousPath != null}" th:href="@{/file(path=${fileResult.previousPath})}"
+                   class="list-group-item list-group-item-action active" aria-current="true">..</a>
+                <a th:each="pathInfo : ${fileResult.pathList}" th:text="${pathInfo.name}"
+                   th:href="@{/file(path=${pathInfo.path})}" class="list-group-item list-group-item-action"></a>
+            </div>
+        </div>
+        <div class="col-9">
+            <table class="table table-bordered table-striped table-hover">
+                <thead>
+                <tr class="text-center">
+                    <th scope="col">#</th>
+                    <th scope="col">文件名称</th>
+                    <th scope="col">文件大小</th>
+                    <th scope="col">最后修改时间</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="fileInfo : ${fileResult.fileList}">
+                    <th scope="row" th:text="${fileInfoStat.count}">index</th>
+                    <th scope="col">
+                        <a th:text="${fileInfo.name}"
+                           th:attr="data-bs-path=${fileInfo.path},data-bs-name=${fileInfo.name}"
+                           href="#" data-bs-toggle="modal" data-bs-target="#filePreviewModal"></a>
+                    </th>
+                    <th th:text="${fileInfo.getSize()}" scope="col" class="text-end"></th>
+                    <th th:text="${#calendars.format(fileInfo.lastModified, 'yyyy-MM-dd HH:mm:ss')}" scope="col"
+                        class="text-center"></th>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="filePreviewModal" tabindex="-1" aria-labelledby="filePreviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="filePreviewModalLabel">文件预览</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" th:value="@{/file/preview}" id="filePreviewUrlInput">
+                <input type="hidden" th:value="@{/file/download}" id="fileDownloadUrlInput">
+                <input type="hidden" id="filePathInput">
+                <div class="form-floating">
+                    <textarea class="form-control" id="filePreviewTextarea" name="filePreview" style="height: 300px"
+                              readonly></textarea>
+                    <label for="filePreviewTextarea" id="filePreviewLabel" class="form-label">文件内容</label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                <button type="button" class="btn btn-primary" id="fileDownloadBtn">下载</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div sec:authorize="hasRole('ROLE_ADMIN')" class="modal fade" id="fileUploadModal" tabindex="-1"
+     aria-labelledby="fileUploadModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="fileUploadModalLabel">文件上传</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form th:action="@{/file/upload}" method="post" enctype="multipart/form-data" id="fileUploadForm"
+                      class="needs-validation" novalidate>
+                    <input type="hidden" th:value="${fileResult.currentPath}" name="path">
+                    <div class="mb-3">
+                        <label for="fileUploadInput" class="form-label">多选文件</label>
+                        <input class="form-control" type="file" id="fileUploadInput" name="files" multiple required>
+                        <div class="invalid-feedback">
+                            请选择文件
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                <button type="button" class="btn btn-primary" id="fileUploadBtn">上传</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"
+        th:src="@{/webjars/bootstrap/5.3.1/dist/js/bootstrap.bundle.min.js}"
+        integrity="sha256-0upsHgyryiDRjpJLJaHNAYfDi6fDP2CrBuGwQCubzbU=" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios@1.4.0/dist/axios.min.js"
+        th:src="@{/webjars/axios/1.4.0/dist/axios.min.js}"
+        integrity="sha256-/UzhKodZQoGvzunHOkD+eswoK8yedk+7OvoUgalqCR4=" crossorigin="anonymous"></script>
+
+<script>
+    const filePreviewModal = document.getElementById('filePreviewModal')
+    const filePreviewTextarea = filePreviewModal.querySelector('#filePreviewTextarea')
+    const filePreviewLabel = filePreviewModal.querySelector('#filePreviewLabel')
+    const filePathInput = filePreviewModal.querySelector('#filePathInput')
+    const fileDownloadBtn = filePreviewModal.querySelector('#fileDownloadBtn')
+    const filePreviewUrlInput = filePreviewModal.querySelector('#filePreviewUrlInput')
+    const fileDownloadUrlInput = filePreviewModal.querySelector('#fileDownloadUrlInput')
+    filePreviewModal.addEventListener('shown.bs.modal', loadFileContentToPreviewModal)
+    fileDownloadBtn.addEventListener('click', downloadFile)
+
+    function loadFileContentToPreviewModal(event) {
+        const button = event.relatedTarget
+        const path = button.getAttribute('data-bs-path')
+        const name = button.getAttribute('data-bs-name')
+        filePathInput.value = path
+        filePreviewLabel.textContent = name
+        filePreviewTextarea.value = ''
+        filePreviewTextarea.classList.remove('is-valid', 'is-invalid')
+        axios.get(filePreviewUrlInput.value, {
+            params: {path}
+        }).then((response) => {
+            if (response.data.status === 200) {
+                filePreviewTextarea.classList.add('is-valid')
+                filePreviewTextarea.value = response.data.result
+            } else {
+                filePreviewTextarea.classList.add('is-invalid')
+                filePreviewTextarea.value = response.data.error
+            }
+        }).catch((error) => {
+            filePreviewTextarea.classList.add('is-invalid')
+            filePreviewTextarea.value = error.message
+        }).finally(() => {
+            filePreviewTextarea.scroll()
+        })
+    }
+
+    function downloadFile(event) {
+        const args = new URLSearchParams({
+            path: filePathInput.value
+        })
+        window.location.href = fileDownloadUrlInput.value + '?' + args
+    }
+</script>
+
+<script sec:authorize="hasRole('ROLE_ADMIN')">
+    const fileUploadModal = document.getElementById('fileUploadModal')
+    const fileUploadForm = fileUploadModal.querySelector('#fileUploadForm')
+    const fileUploadInput = fileUploadModal.querySelector('#fileUploadInput')
+    const fileUploadBtn = fileUploadModal.querySelector('#fileUploadBtn')
+    fileUploadModal.addEventListener('shown.bs.modal', resetFileUploadModal)
+    fileUploadBtn.addEventListener('click', uploadFile)
+
+    function resetFileUploadModal(event) {
+        fileUploadInput.value = ''
+        fileUploadForm.classList.remove('was-validated')
+    }
+
+    function uploadFile(event) {
+        if (fileUploadForm.checkValidity()) {
+            fileUploadForm.submit()
+        } else {
+            fileUploadForm.classList.add('was-validated')
+        }
+    }
+</script>
+</body>
+</html>
