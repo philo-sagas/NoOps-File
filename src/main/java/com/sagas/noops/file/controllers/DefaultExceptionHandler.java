@@ -1,5 +1,6 @@
-package com.sagas.noops.db.exceptions;
+package com.sagas.noops.file.controllers;
 
+import com.sagas.noops.file.exceptions.FileException;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -23,7 +24,7 @@ public class DefaultExceptionHandler {
     }
 
     @ExceptionHandler(FileException.class)
-    public String handleDbQueryException(FileException ex, RedirectAttributes redirectAttributes) {
+    public String handleFileException(FileException ex, RedirectAttributes redirectAttributes) {
         redirectAttributes.addAttribute(PATH_NAME, ex.getPath());
         return handleGlobalException(ex, redirectAttributes);
     }

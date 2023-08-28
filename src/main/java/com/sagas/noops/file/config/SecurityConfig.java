@@ -1,6 +1,6 @@
-package com.sagas.noops.db.config;
+package com.sagas.noops.file.config;
 
-import com.sagas.noops.db.constants.ApplicationConstants;
+import com.sagas.noops.file.constants.ApplicationConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

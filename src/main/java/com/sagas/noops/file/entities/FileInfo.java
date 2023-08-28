@@ -1,4 +1,4 @@
-package com.sagas.noops.db.entities;
+package com.sagas.noops.file.entities;
 
 import lombok.Data;
 

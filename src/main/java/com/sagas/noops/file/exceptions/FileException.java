@@ -1,4 +1,4 @@
-package com.sagas.noops.db.exceptions;
+package com.sagas.noops.file.exceptions;
 
 public class FileException extends RuntimeException {
     private String path;

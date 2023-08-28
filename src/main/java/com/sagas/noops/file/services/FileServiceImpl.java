@@ -1,13 +1,17 @@
-package com.sagas.noops.db.services;
+package com.sagas.noops.file.services;
 
-import com.sagas.noops.db.entities.FileInfo;
-import com.sagas.noops.db.exceptions.FileException;
-import com.sagas.noops.db.inputs.FileParam;
-import com.sagas.noops.db.inputs.FileUploadParam;
-import com.sagas.noops.db.outputs.FileResult;
-import io.micrometer.common.util.StringUtils;
+import com.sagas.noops.file.constants.ApplicationConstants;
+import com.sagas.noops.file.entities.FileInfo;
+import com.sagas.noops.file.exceptions.FileException;
+import com.sagas.noops.file.inputs.FileParam;
+import com.sagas.noops.file.inputs.FileUploadParam;
+import com.sagas.noops.file.outputs.FileResult;
+import com.sagas.noops.file.support.ShellExecutor;
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.io.IOUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
@@ -15,16 +19,17 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
+@Log4j2
 @Service
 public class FileServiceImpl implements FileService {
+    @Autowired
+    private ApplicationConstants applicationConstants;
+
     @Override
     public FileResult listFiles(FileParam fileParam) {
-        String currentPath = StringUtils.isBlank(fileParam.getPath()) ? "." : fileParam.getPath();
+        String currentPath = StringUtils.hasText(fileParam.getPath()) ? fileParam.getPath() : ".";
         File currentFile = new File(currentPath);
 
         List<FileInfo> fileList = new LinkedList<>();
@@ -62,7 +67,7 @@ public class FileServiceImpl implements FileService {
 
     @Override
     public String readContent(FileParam fileParam) throws IOException {
-        String currentPath = StringUtils.isBlank(fileParam.getPath()) ? "." : fileParam.getPath();
+        String currentPath = StringUtils.hasText(fileParam.getPath()) ? fileParam.getPath() : ".";
         File currentFile = new File(currentPath);
         if (currentFile.exists() && currentFile.isFile() && currentFile.canRead()) {
             byte[] buffer = new byte[128 * 1024];
@@ -84,11 +89,19 @@ public class FileServiceImpl implements FileService {
                 if (!filepath.exists()) {
                     filepath.mkdirs();
                 }
+                List<String> targetPathList = new LinkedList<>();
                 for (MultipartFile source : files) {
                     if (!source.isEmpty()) {
                         File target = new File(filepath, source.getOriginalFilename());
                         source.transferTo(target);
+                        targetPathList.add(target.getCanonicalPath());
                     }
+                }
+                Map<String, List<String>> shellExecutorScript = applicationConstants.getShellExecutorScript();
+                Map<String, String> shellExecutorRedirect = applicationConstants.getShellExecutorRedirect();
+                ShellExecutor shellExecutor = new ShellExecutor(shellExecutorScript, shellExecutorRedirect);
+                for (String targetPath : targetPathList) {
+                    shellExecutor.executeScript(targetPath);
                 }
             } catch (Throwable t) {
                 throw new FileException(t, path);

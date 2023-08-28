@@ -1,4 +1,4 @@
-package com.sagas.noops.db;
+package com.sagas.noops.file;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

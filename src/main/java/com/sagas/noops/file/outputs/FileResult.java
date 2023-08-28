@@ -1,6 +1,6 @@
-package com.sagas.noops.db.outputs;
+package com.sagas.noops.file.outputs;
 
-import com.sagas.noops.db.entities.FileInfo;
+import com.sagas.noops.file.entities.FileInfo;
 import lombok.Data;
 
 import java.util.List;

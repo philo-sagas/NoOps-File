@@ -1,4 +1,4 @@
-package com.sagas.noops.db.inputs;
+package com.sagas.noops.file.inputs;
 
 import lombok.Data;
 

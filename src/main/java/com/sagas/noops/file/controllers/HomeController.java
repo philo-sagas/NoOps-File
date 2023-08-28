@@ -1,7 +1,7 @@
-package com.sagas.noops.db.controllers;
+package com.sagas.noops.file.controllers;
 
-import com.sagas.noops.db.outputs.ResultModel;
-import com.sagas.noops.db.outputs.VersionResult;
+import com.sagas.noops.file.outputs.ResultModel;
+import com.sagas.noops.file.outputs.VersionResult;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;

@@ -1,12 +1,10 @@
-package com.sagas.noops.db.controllers;
+package com.sagas.noops.file.controllers;
 
-import com.sagas.noops.db.exceptions.DefaultExceptionHandler;
-import com.sagas.noops.db.inputs.FileParam;
-import com.sagas.noops.db.inputs.FileUploadParam;
-import com.sagas.noops.db.outputs.FileResult;
-import com.sagas.noops.db.outputs.ResultModel;
-import com.sagas.noops.db.services.FileService;
-import io.micrometer.common.util.StringUtils;
+import com.sagas.noops.file.inputs.FileParam;
+import com.sagas.noops.file.inputs.FileUploadParam;
+import com.sagas.noops.file.outputs.FileResult;
+import com.sagas.noops.file.outputs.ResultModel;
+import com.sagas.noops.file.services.FileService;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;
@@ -16,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -35,7 +34,7 @@ public class FileController {
     @RequestMapping
     public String execute(FileParam fileParam, Model model, RedirectAttributes redirectAttributes) {
         try {
-            String currentPath = StringUtils.isBlank(fileParam.getPath()) ? "." : fileParam.getPath();
+            String currentPath = StringUtils.hasText(fileParam.getPath()) ? fileParam.getPath() : ".";
             File currentFile = new File(currentPath);
             if (!currentFile.exists()) {
                 redirectAttributes.addFlashAttribute(DefaultExceptionHandler.ERROR_MESSAGE_NAME,
@@ -66,7 +65,7 @@ public class FileController {
     @GetMapping("/download")
     public Object download(FileParam fileParam, RedirectAttributes redirectAttributes) {
         try {
-            String currentPath = StringUtils.isBlank(fileParam.getPath()) ? "." : fileParam.getPath();
+            String currentPath = StringUtils.hasText(fileParam.getPath()) ? fileParam.getPath() : ".";
             File currentFile = new File(currentPath);
             if (currentFile.exists() && currentFile.isFile() && currentFile.canRead()) {
                 HttpHeaders headers = new HttpHeaders();

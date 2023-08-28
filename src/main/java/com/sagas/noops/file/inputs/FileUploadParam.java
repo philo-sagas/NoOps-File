@@ -1,11 +1,11 @@
-package com.sagas.noops.db.inputs;
+package com.sagas.noops.file.inputs;
 
 import lombok.Data;
 import org.springframework.web.multipart.MultipartFile;
 
 @Data
 public class FileUploadParam {
-    MultipartFile[] files;
+    private MultipartFile[] files;
 
     private String path;
 }

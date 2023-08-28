@@ -1,10 +1,9 @@
-package com.sagas.noops.db.services;
+package com.sagas.noops.file.services;
 
-import com.sagas.noops.db.inputs.FileParam;
-import com.sagas.noops.db.inputs.FileUploadParam;
-import com.sagas.noops.db.outputs.FileResult;
+import com.sagas.noops.file.inputs.FileParam;
+import com.sagas.noops.file.inputs.FileUploadParam;
+import com.sagas.noops.file.outputs.FileResult;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 
 public interface FileService {

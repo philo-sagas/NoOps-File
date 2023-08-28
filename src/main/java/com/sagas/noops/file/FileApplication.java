@@ -1,4 +1,4 @@
-package com.sagas.noops.db;
+package com.sagas.noops.file;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
