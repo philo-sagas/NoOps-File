@@ -18,3 +18,10 @@ spring:
 NoOpsFile:
   admin-password: admin123
   guest-password: guest123
+  shell-executor-script:
+    [/deployment/webapps/db.jar]:
+      - /deployment/bin/restart.sh db
+    [/deployment/webapps/file.jar]:
+      - /deployment/bin/restart.sh file
+  shell-executor-redirect:
+    [/deployment/webapps/file.jar]: /dev/null
