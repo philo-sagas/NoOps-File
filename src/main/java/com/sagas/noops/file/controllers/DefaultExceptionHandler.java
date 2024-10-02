@@ -6,7 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.util.UriComponentsBuilder;
 
 @Log4j2
 @ControllerAdvice
@@ -17,15 +17,19 @@ public class DefaultExceptionHandler {
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.FOUND)
-    public String handleGlobalException(Throwable ex, RedirectAttributes redirectAttributes) {
+    public String handleGlobalException(Throwable ex) {
         log.error(ex, ex);
-        redirectAttributes.addFlashAttribute(ERROR_MESSAGE_NAME, ex.getMessage());
-        return "redirect:/file";
+        return UriComponentsBuilder.fromPath("redirect:/file")
+                .queryParam(ERROR_MESSAGE_NAME, ex.getMessage())
+                .encode().toUriString();
     }
 
     @ExceptionHandler(FileException.class)
-    public String handleFileException(FileException ex, RedirectAttributes redirectAttributes) {
-        redirectAttributes.addAttribute(PATH_NAME, ex.getPath());
-        return handleGlobalException(ex, redirectAttributes);
+    public String handleFileException(FileException ex) {
+        log.error(ex, ex);
+        return UriComponentsBuilder.fromPath("redirect:/file")
+                .queryParam(PATH_NAME, ex.getPath())
+                .queryParam(ERROR_MESSAGE_NAME, ex.getMessage())
+                .encode().toUriString();
     }
 }

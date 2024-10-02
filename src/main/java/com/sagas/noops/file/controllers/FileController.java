@@ -12,6 +12,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
@@ -19,7 +20,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.util.UriComponentsBuilder;
+import reactor.core.publisher.Mono;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -28,18 +30,25 @@ import java.io.FileNotFoundException;
 @Controller
 @RequestMapping("/file")
 public class FileController {
+    public static final String HAS_ROLE_ADMIN = "hasRoleAdmin";
+
     @Autowired
     private FileService fileService;
 
     @RequestMapping
-    public String execute(FileParam fileParam, Model model, RedirectAttributes redirectAttributes) {
+    public String execute(FileParam fileParam, Model model, Authentication authentication) {
         try {
+            if (StringUtils.hasText(fileParam.getErrorMessage())) {
+                model.addAttribute(DefaultExceptionHandler.ERROR_MESSAGE_NAME, fileParam.getErrorMessage());
+            }
+            boolean hasRoleAdmin = authentication.getAuthorities().stream().anyMatch(ga -> "ROLE_ADMIN".equals(ga.getAuthority()));
+            model.addAttribute(HAS_ROLE_ADMIN, hasRoleAdmin);
+
             String currentPath = StringUtils.hasText(fileParam.getPath()) ? fileParam.getPath() : ".";
             File currentFile = new File(currentPath);
             if (!currentFile.exists()) {
-                redirectAttributes.addFlashAttribute(DefaultExceptionHandler.ERROR_MESSAGE_NAME,
+                model.addAttribute(DefaultExceptionHandler.ERROR_MESSAGE_NAME,
                         String.format("Path (%s) Not Found!", currentPath));
-                return "redirect:/file";
             }
             FileResult fileResult = fileService.listFiles(fileParam);
             model.addAttribute(fileResult);
@@ -52,18 +61,18 @@ public class FileController {
 
     @ResponseBody
     @GetMapping("/preview")
-    public ResultModel<String> preview(FileParam fileParam) {
+    public Mono<ResultModel<String>> preview(FileParam fileParam) {
         try {
             String content = fileService.readContent(fileParam);
-            return ResultModel.success(content);
+            return Mono.just(ResultModel.success(content));
         } catch (Throwable t) {
             log.error(t, t);
-            return ResultModel.failure(t.getMessage());
+            return Mono.just(ResultModel.failure(t.getMessage()));
         }
     }
 
     @GetMapping("/download")
-    public Object download(FileParam fileParam, RedirectAttributes redirectAttributes) {
+    public Object download(FileParam fileParam) {
         try {
             String currentPath = StringUtils.hasText(fileParam.getPath()) ? fileParam.getPath() : ".";
             File currentFile = new File(currentPath);
@@ -80,16 +89,19 @@ public class FileController {
             }
         } catch (Throwable t) {
             log.error(t, t);
-            redirectAttributes.addFlashAttribute(DefaultExceptionHandler.ERROR_MESSAGE_NAME, t.getMessage());
+            return UriComponentsBuilder.fromPath("redirect:/file")
+                    .queryParam(DefaultExceptionHandler.ERROR_MESSAGE_NAME, t.getMessage())
+                    .encode().toUriString();
         }
-        return "redirect:/file";
     }
 
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @PostMapping("/upload")
-    public String upload(FileUploadParam fileUploadParam, RedirectAttributes redirectAttributes) {
-        fileService.uploadFiles(fileUploadParam);
-        redirectAttributes.addAttribute(DefaultExceptionHandler.PATH_NAME, fileUploadParam.getPath());
-        return "redirect:/file";
+    public Mono<String> upload(Mono<FileUploadParam> fileUploadParamMono) {
+        return fileUploadParamMono
+                .doOnNext(fileService::uploadFiles)
+                .map(param -> UriComponentsBuilder.fromPath("redirect:/file")
+                        .queryParam(DefaultExceptionHandler.PATH_NAME, param.getPath())
+                        .encode().toUriString());
     }
 }

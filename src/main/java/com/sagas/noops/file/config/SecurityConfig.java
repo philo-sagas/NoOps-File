@@ -4,23 +4,19 @@ import com.sagas.noops.file.constants.ApplicationConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity;
+import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
+import org.springframework.security.config.web.server.ServerHttpSecurity;
+import org.springframework.security.core.userdetails.MapReactiveUserDetailsService;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
-import org.springframework.security.web.SecurityFilterChain;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import org.springframework.security.web.server.SecurityWebFilterChain;
 
 @Configuration
-@EnableMethodSecurity
+@EnableWebFluxSecurity
+@EnableReactiveMethodSecurity
 public class SecurityConfig {
     @Autowired
     private ApplicationConstants applicationConstants;
@@ -31,23 +27,25 @@ public class SecurityConfig {
     }
 
     @Bean
-    public UserDetailsService userDetailsService(PasswordEncoder encoder) {
-        List<UserDetails> usersList = new ArrayList<>();
-        usersList.add(new User("admin", encoder.encode(applicationConstants.getAdminPassword()), Arrays.asList(new SimpleGrantedAuthority("ROLE_ADMIN"))));
-        usersList.add(new User("guest", encoder.encode(applicationConstants.getGuestPassword()), Arrays.asList(new SimpleGrantedAuthority("ROLE_GUEST"))));
-        return new InMemoryUserDetailsManager(usersList);
+    public MapReactiveUserDetailsService userDetailsService(PasswordEncoder encoder) {
+        UserDetails adminUserDetails = User.withUsername("admin")
+                .password(encoder.encode(applicationConstants.getAdminPassword()))
+                .authorities("ROLE_ADMIN").build();
+        UserDetails guestUserDetails = User.withUsername("guest")
+                .password(encoder.encode(applicationConstants.getGuestPassword()))
+                .authorities("ROLE_GUEST").build();
+        return new MapReactiveUserDetailsService(adminUserDetails, guestUserDetails);
     }
 
     @Bean
-    public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .authorizeHttpRequests((authorize) -> authorize
-                        .requestMatchers("/webjars/**", "/assets/**", "/favicon.ico", "/login").permitAll()
-                        .anyRequest().authenticated()
+    public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
+        return http
+                .authorizeExchange(exchanges -> exchanges
+                        .pathMatchers("/webjars/**", "/assets/**", "/favicon.ico", "/login").permitAll()
+                        .anyExchange().authenticated()
                 )
-                .formLogin((formLogin) ->
-                        formLogin.loginPage("/login")
-                );
-        return http.build();
+                .formLogin(formLoginSpec -> formLoginSpec.loginPage("/login"))
+                .csrf(ServerHttpSecurity.CsrfSpec::disable)
+                .build();
     }
 }

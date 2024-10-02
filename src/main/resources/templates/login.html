@@ -51,11 +51,11 @@
                 </div>
             </div>
             <button type="submit" class="btn btn-primary">登录</button>
-            <div th:if="${param.error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <div th:if="${param.keySet().contains('error')}" class="alert alert-danger alert-dismissible fade show" role="alert">
                 <div>用户名或密码错误</div>
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
-            <div th:if="${param.logout}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <div th:if="${param.keySet().contains('logout')}" class="alert alert-success alert-dismissible fade show" role="alert">
                 <div>您已经登出</div>
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>

@@ -10,9 +10,9 @@ import com.sagas.noops.file.support.ShellExecutor;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -81,7 +81,7 @@ public class FileServiceImpl implements FileService {
     @Override
     public void uploadFiles(FileUploadParam fileUploadParam) {
         String path = fileUploadParam.getPath();
-        MultipartFile[] files = fileUploadParam.getFiles();
+        FilePart[] files = fileUploadParam.getFiles();
         if (files != null && files.length > 0) {
             try {
                 File filepath = new File(path);
@@ -90,12 +90,10 @@ public class FileServiceImpl implements FileService {
                     filepath.mkdirs();
                 }
                 List<String> targetPathList = new LinkedList<>();
-                for (MultipartFile source : files) {
-                    if (!source.isEmpty()) {
-                        File target = new File(filepath, source.getOriginalFilename());
-                        source.transferTo(target);
-                        targetPathList.add(target.getCanonicalPath());
-                    }
+                for (FilePart source : files) {
+                    File target = new File(filepath, source.filename());
+                    source.transferTo(target).subscribe();
+                    targetPathList.add(target.getCanonicalPath());
                 }
                 Map<String, List<String>> shellExecutorScript = applicationConstants.getShellExecutorScript();
                 Map<String, String> shellExecutorRedirect = applicationConstants.getShellExecutorRedirect();

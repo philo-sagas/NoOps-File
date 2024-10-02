@@ -5,4 +5,6 @@ import lombok.Data;
 @Data
 public class FileParam {
     private String path;
+
+    private String errorMessage;
 }

@@ -65,7 +65,7 @@
             </nav>
         </div>
         <div class="col-auto">
-            <button sec:authorize="hasRole('ROLE_ADMIN')" type="button" class="btn btn-outline-primary"
+            <button th:if="${hasRoleAdmin}" type="button" class="btn btn-outline-primary"
                     data-bs-toggle="modal" data-bs-target="#fileUploadModal">上传
             </button>
         </div>
@@ -132,7 +132,7 @@
     </div>
 </div>
 
-<div sec:authorize="hasRole('ROLE_ADMIN')" class="modal fade" id="fileUploadModal" tabindex="-1"
+<div th:if="${hasRoleAdmin}" class="modal fade" id="fileUploadModal" tabindex="-1"
      aria-labelledby="fileUploadModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
@@ -213,7 +213,7 @@
     }
 </script>
 
-<script sec:authorize="hasRole('ROLE_ADMIN')">
+<script th:if="${hasRoleAdmin}">
     const fileUploadModal = document.getElementById('fileUploadModal')
     const fileUploadForm = fileUploadModal.querySelector('#fileUploadForm')
     const fileUploadInput = fileUploadModal.querySelector('#fileUploadInput')
